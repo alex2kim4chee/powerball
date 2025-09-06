@@ -1,6 +1,7 @@
 import "./globals.css";
 import { Inter, Unbounded } from "next/font/google";
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 
 const inter = Inter({ subsets: ["latin", "cyrillic"], variable: "--font-inter" });
 const unbounded = Unbounded({ subsets: ["latin", "cyrillic"], variable: "--font-unbounded" });
@@ -8,15 +9,33 @@ const unbounded = Unbounded({ subsets: ["latin", "cyrillic"], variable: "--font-
 export const metadata: Metadata = {
   metadataBase: new URL("https://example.com"),
   title: {
-    default: "PowerBall на русском — купить билет онлайн, следующий тираж сегодня",
+    default:
+      "PowerBall на русском — купить билет Powerball онлайн, результаты и джекпот",
     template: "%s | PowerBall RU",
   },
   description:
-    "Русскоязычный интерфейс, живой джекпот, безопасная оплата. Выберите числа, купите билет и следите за результатами. 18+, играйте ответственно.",
+    "PowerBall на русском: купить билет онлайн, посмотреть результаты тиражей и текущий джекпот. Быстрый выбор чисел, безопасная оплата. 18+, играйте ответственно.",
+  keywords: [
+    "Powerball",
+    "Пауэрбол",
+    "PowerBall на русском",
+    "купить билет Powerball",
+    "результаты Powerball",
+    "джекпот Powerball",
+    "лотерея онлайн",
+  ],
+  alternates: {
+    canonical: "/",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
   openGraph: {
-    title: "PowerBall на русском — купить билет онлайн, следующий тираж сегодня",
+    title:
+      "PowerBall на русском — купить билет Powerball онлайн, результаты и джекпот",
     description:
-      "Русскоязычный интерфейс, живой джекпот, безопасная оплата. Выберите числа, купите билет и следите за результатами. 18+, играйте ответственно.",
+      "PowerBall на русском: купить билет онлайн, посмотреть результаты тиражей и текущий джекпот. Быстрый выбор чисел, безопасная оплата. 18+, играйте ответственно.",
     type: "website",
     locale: "ru_RU",
     images: [
@@ -42,6 +61,52 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ru" className={`${inter.variable} ${unbounded.variable}`}>
+      <head>
+        {/* Schema.org: WebSite */}
+        <Script id="ld-website" type="application/ld+json" strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              name: "PowerBall RU",
+              url: "https://example.com/",
+              inLanguage: "ru-RU",
+              potentialAction: {
+                "@type": "SearchAction",
+                target: "https://example.com/search?q={query}",
+                "query-input": "required name=query",
+              },
+            }),
+          }}
+        />
+
+        {/* Schema.org: LocalBusiness for Yandex with address and category */}
+        <Script id="ld-localbusiness" type="application/ld+json" strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "LocalBusiness",
+              name: "PowerBall RU",
+              url: "https://example.com/",
+              image: "https://example.com/og.jpg",
+              description:
+                "Русскоязычный сервис продажи билетов Powerball онлайн: быстрый выбор чисел, безопасная оплата, результаты тиражей. 18+, играйте ответственно.",
+              telephone: undefined,
+              address: {
+                "@type": "PostalAddress",
+                streetAddress: "Молодёжный проезд, 6, район Новокуркино",
+                addressLocality: "Химки",
+                addressRegion: "Московская область",
+                addressCountry: "RU",
+              },
+              areaServed: "Химки и Московская область",
+              priceRange: "₽₽",
+              category: "Лотереи, развлечения",
+              additionalType: "https://schema.org/EntertainmentBusiness",
+            }),
+          }}
+        />
+      </head>
       <body>
         {children}
       </body>
