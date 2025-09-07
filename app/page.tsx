@@ -370,7 +370,11 @@ function OrbLabel({ text }: { text: string }) {
       if (textWidth === 0) return;
       // Уменьшаем на 15% от текущего большого размера: 160% → 136%
       const target = orbWidth * 1.36;
-      const k = target / textWidth; // разрешаем upscaling (>1)
+      let k = target / textWidth; // разрешаем upscaling (>1)
+      // На мобильных делаем надпись на 15% меньше
+      if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(max-width: 480px)').matches) {
+        k *= 0.85;
+      }
       setScale(k);
     };
     calc();
