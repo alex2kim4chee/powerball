@@ -9,6 +9,7 @@ coverage
 # Next.js
 .next/
 out/
+.vercel/output/
 
 # Env
 .env.local
@@ -25,4 +26,3 @@ pnpm-debug.log*
 .DS_Store
 .vscode/*
 !.vscode/extensions.json
-

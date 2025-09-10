@@ -3,8 +3,19 @@ import { Inter, Unbounded } from "next/font/google";
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 
-const inter = Inter({ subsets: ["latin", "cyrillic"], variable: "--font-inter" });
-const unbounded = Unbounded({ subsets: ["latin", "cyrillic"], variable: "--font-unbounded" });
+// Явно запрашиваем используемые начертания, чтобы избежать синтетического bold/semibold
+const inter = Inter({
+  subsets: ["latin", "cyrillic"],
+  weight: ["400", "600", "700", "800"],
+  display: "swap",
+  variable: "--font-inter",
+});
+const unbounded = Unbounded({
+  subsets: ["latin", "cyrillic"],
+  weight: ["400", "700", "800"],
+  display: "swap",
+  variable: "--font-unbounded",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://example.com"),

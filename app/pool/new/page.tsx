@@ -5,12 +5,48 @@ import { createPool, importPoolFromFile } from "../../../lib/pool";
 import { useRouter } from "next/navigation";
 
 function nextDrawDefault(): Date {
-  const d = new Date();
-  d.setSeconds(0, 0);
-  const target = new Date(d);
-  target.setHours(23, 0, 0, 0);
-  if (d.getTime() > target.getTime()) target.setDate(target.getDate() + 1);
-  return target;
+  // Powerball: Mon/Wed/Sat at 22:59 ET
+  const tz = "America/New_York";
+  const dtf = new Intl.DateTimeFormat("en-US", {
+    timeZone: tz,
+    hour12: false,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+  const parseParts = (d: Date) => Object.fromEntries(dtf.formatToParts(d).map((p) => [p.type, p.value] as const));
+  const makeEtDate = (y: number, m: number, d: number, hh: number, mm: number, ss = 0) => {
+    const utcGuess = Date.UTC(y, m - 1, d, hh, mm, ss);
+    const parts = parseParts(new Date(utcGuess));
+    const gotMs = Date.UTC(+parts.year, +parts.month - 1, +parts.day, +parts.hour, +parts.minute, +parts.second);
+    const desiredMs = Date.UTC(y, m - 1, d, hh, mm, ss);
+    return new Date(utcGuess - (gotMs - desiredMs));
+  };
+  const now = new Date();
+  const p = parseParts(now);
+  const y = +p.year, m = +p.month, d = +p.day, H = +p.hour, M = +p.minute;
+  const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay(); // 0..6
+  const isDrawDay = dow === 1 || dow === 3 || dow === 6;
+  const beforeCutoff = H < 22 || (H === 22 && M < 59);
+  const addDays = (yy: number, mm: number, dd: number, add: number) => {
+    const t = new Date(Date.UTC(yy, mm - 1, dd));
+    t.setUTCDate(t.getUTCDate() + add);
+    return { y: t.getUTCFullYear(), m: t.getUTCMonth() + 1, d: t.getUTCDate() };
+  };
+  let ty = y, tm = m, td = d;
+  if (!(isDrawDay && beforeCutoff)) {
+    let add = isDrawDay ? 1 : 0;
+    while (true) {
+      add += 1;
+      const nd = addDays(y, m, d, add - 1);
+      const ndow = new Date(Date.UTC(nd.y, nd.m - 1, nd.d)).getUTCDay();
+      if (ndow === 1 || ndow === 3 || ndow === 6) { ty = nd.y; tm = nd.m; td = nd.d; break; }
+    }
+  }
+  return makeEtDate(ty, tm, td, 22, 59, 0);
 }
 
 export default function NewPoolPage() {

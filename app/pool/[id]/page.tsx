@@ -1,5 +1,7 @@
 "use client";
 
+export const runtime = 'edge';
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import NumberPicker from "../../../components/NumberPicker";
@@ -38,9 +40,10 @@ function Countdown({ target }: { target: Date }) {
   );
 }
 
-export default function PoolPage({ params }: { params: { id: string } }) {
+// Next 15 may type `params` as an async value; keep it flexible to satisfy TS across versions
+export default function PoolPage({ params }: any) {
   const router = useRouter();
-  const poolId = params.id;
+  const poolId = (params as any)?.id as string;
   const [pool, setPool] = useState<Pool | null>(null);
   const [tickets, setTickets] = useState<Selection[]>([]);
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -181,7 +184,7 @@ export default function PoolPage({ params }: { params: { id: string } }) {
             </div>
           </div>
           {tickets.map((sel, i) => (
-            <div key={i} ref={(el) => (ticketRefs.current[i] = el)}>
+            <div key={i} ref={(el) => { ticketRefs.current[i] = el; }}>
               <NumberPicker value={sel} onChange={(s) => setTickets((prev) => prev.map((p, idx) => (idx === i ? s : p)))} title={`Билет #${i + 1}`} />
             </div>
           ))}

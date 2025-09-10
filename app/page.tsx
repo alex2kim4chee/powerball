@@ -3,11 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { importPoolFromFile } from "../lib/pool";
-import NumberPicker from "../components/NumberPicker";
 import HowItWorks from "../components/HowItWorks";
 import DemoPool from "../components/DemoPool";
-import type { Selection } from "../lib/pool";
-import { makeEmptySelection, makeRandomSelection } from "../lib/pool";
 
 function useCountdown(target: Date) {
   const [now, setNow] = useState<Date>(() => new Date());
@@ -26,18 +23,63 @@ function useCountdown(target: Date) {
 
 function NextDrawDate() {
   const next = useMemo(() => {
-    const d = new Date();
-    d.setSeconds(0, 0);
-    // Today 23:00 local, or tomorrow if past
-    const target = new Date(d);
-    target.setHours(23, 0, 0, 0);
-    if (d.getTime() > target.getTime()) target.setDate(target.getDate() + 1);
-    return target;
+    const tz = "America/New_York"; // ET
+    const dtf = new Intl.DateTimeFormat("en-US", {
+      timeZone: tz,
+      hour12: false,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+
+    const parseParts = (d: Date) => Object.fromEntries(dtf.formatToParts(d).map((p) => [p.type, p.value] as const));
+
+    // Helper: build Date for specific wall time in ET
+    const makeEtDate = (y: number, m: number, d: number, hh: number, mm: number, ss = 0) => {
+      const utcGuess = Date.UTC(y, m - 1, d, hh, mm, ss);
+      const parts = parseParts(new Date(utcGuess));
+      const gotMs = Date.UTC(+parts.year, +parts.month - 1, +parts.day, +parts.hour, +parts.minute, +parts.second);
+      const desiredMs = Date.UTC(y, m - 1, d, hh, mm, ss);
+      const finalMs = utcGuess - (gotMs - desiredMs);
+      return new Date(finalMs);
+    };
+
+    const now = new Date();
+    const p = parseParts(now);
+    const y = +p.year, m = +p.month, d = +p.day, H = +p.hour, M = +p.minute;
+    const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay(); // 0=Sun..6=Sat, for ET civil date
+
+    const isDrawDay = dow === 1 || dow === 3 || dow === 6; // Mon, Wed, Sat
+    const beforeCutoff = H < 22 || (H === 22 && M < 59);
+
+    const addDays = (yy: number, mm: number, dd: number, add: number) => {
+      const t = new Date(Date.UTC(yy, mm - 1, dd));
+      t.setUTCDate(t.getUTCDate() + add);
+      return { y: t.getUTCFullYear(), m: t.getUTCMonth() + 1, d: t.getUTCDate() };
+    };
+
+    let ty = y, tm = m, td = d;
+    if (!(isDrawDay && beforeCutoff)) {
+      let add = isDrawDay ? 1 : 0;
+      // advance to next draw weekday
+      while (true) {
+        add += 1;
+        const nd = addDays(y, m, d, add - 1);
+        const ndow = new Date(Date.UTC(nd.y, nd.m - 1, nd.d)).getUTCDay();
+        if (ndow === 1 || ndow === 3 || ndow === 6) { ty = nd.y; tm = nd.m; td = nd.d; break; }
+      }
+    }
+
+    // Draw time 22:59 ET
+    return makeEtDate(ty, tm, td, 22, 59, 0);
   }, []);
   return next;
 }
 
-function AnimatedCounter({ from = 100_000_000, to = 142_000_000, duration = 8000 }: { from?: number; to?: number; duration?: number }) {
+function AnimatedCounter({ from = 100_000_000, to = 142_000_000, duration = 8000, format = "money" as "money" | "million" }: { from?: number; to?: number; duration?: number; format?: "money" | "million" }) {
   const [val, setVal] = useState(from);
   const startRef = useRef<number | null>(null);
   useEffect(() => {
@@ -52,7 +94,9 @@ function AnimatedCounter({ from = 100_000_000, to = 142_000_000, duration = 8000
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
   }, [from, to, duration]);
-  const str = `$${val.toLocaleString("en-US")}`;
+  const str = format === "million"
+    ? `$${Math.round(val / 1_000_000).toLocaleString("en-US")} Million`
+    : `$${val.toLocaleString("en-US")}`;
   return <div className="odometer" aria-live="polite">{str}</div>;
 }
 
@@ -79,53 +123,9 @@ function Countdown({ target }: { target: Date }) {
   );
 }
 
-// NumberPicker and selection utils moved to components/NumberPicker and lib/pool
-
 export default function Page() {
   const router = useRouter();
   const target = NextDrawDate();
-  const [selections, setSelections] = useState<Selection[]>([makeEmptySelection()]);
-  const [tickets, setTickets] = useState<number>(1);
-  const pricePer = 5; // demo
-  const allValid = selections.every((s) => s.numbers.length === 5 && s.power != null);
-  const total = selections.length * pricePer;
-
-  const buy = () => {
-    if (!allValid) {
-      alert("Заполните все билеты: выберите 5 чисел и 1 PowerBall в каждом");
-      return;
-    }
-    alert(`Демо: ${selections.length} бил. на сумму $${total}.\n\nБилеты:\n${selections.map((s,i)=>`#${i+1}: ${s.numbers.join(" ")} PB ${s.power}`).join("\n")}`);
-  };
-
-  // Smooth scroll to a ticket when added/removed
-  const ticketRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const [pendingScrollIndex, setPendingScrollIndex] = useState<number | null>(null);
-  useEffect(() => {
-    if (pendingScrollIndex == null) return;
-    const el = ticketRefs.current[pendingScrollIndex];
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" });
-    }
-    const id = window.setTimeout(() => setPendingScrollIndex(null), 300);
-    return () => window.clearTimeout(id);
-  }, [pendingScrollIndex, selections.length]);
-
-  const addTicket = () => {
-    if (selections.length >= 10) return;
-    setPendingScrollIndex(selections.length); // scroll to new last ticket
-    setSelections((prev) => [...prev, makeEmptySelection()]);
-    setTickets((t) => Math.min(10, t + 1));
-  };
-
-  const removeTicket = () => {
-    if (selections.length <= 1) return;
-    // After removal, previous ticket becomes last: index = length - 2
-    setPendingScrollIndex(Math.max(0, selections.length - 2));
-    setSelections((prev) => prev.slice(0, -1));
-    setTickets((t) => Math.max(1, t - 1));
-  };
-
   // Import pool from home page
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const openImport = () => importInputRef.current?.click();
@@ -159,13 +159,13 @@ export default function Page() {
         <div className="container grid grid-hero">
           <div className="hero__text" style={{ display: "grid", gap: 18, alignContent: "center" }}>
             <h1 className="hero__h1" style={{ fontSize: "clamp(22px, 5.5vw, 48px)", margin: 0 }}>
-              PowerBall на русском — шанс на миллионы уже сегодня
+              Играйте командой. Прозрачный лотерейный пул для Powerball.
             </h1>
             <p style={{ color: "var(--text-dim)", margin: 0 }}>
-              Выберите числа за 30 секунд. Следующий тираж через <Countdown target={target} />. Текущий джекпот:
+              Выберите числа, добавьте участников, укажите вклады — система проверит, подпишет и подготовит договор. Следующий тираж через <Countdown target={target} />.
             </p>
             <div suppressHydrationWarning>
-              <AnimatedCounter />
+              <AnimatedCounter from={32_000_000} to={33_000_000} duration={1500} />
             </div>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               <a className="btn btn--primary" href="/pool/new">Создать пул</a>

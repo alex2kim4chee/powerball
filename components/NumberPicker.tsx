@@ -2,7 +2,7 @@
 
 import React from "react";
 import type { Selection } from "../lib/pool";
-import { makeRandomSelection } from "../lib/pool";
+import { makeRandomSelection, makeHotSelection, makeColdSelection } from "../lib/pool";
 
 export default function NumberPicker({ value, onChange, title }: { value: Selection; onChange: (s: Selection) => void; title?: string }) {
   const selected = value;
@@ -15,8 +15,8 @@ export default function NumberPicker({ value, onChange, title }: { value: Select
   const setPower = (n: number) => onChange({ ...selected, power: n });
 
   const randomize = () => onChange(makeRandomSelection());
-  const hot = () => randomize();
-  const cold = () => randomize();
+  const hot = () => onChange(makeHotSelection());
+  const cold = () => onChange(makeColdSelection());
 
   return (
     <div className="card" style={{ padding: 20 }}>
@@ -60,4 +60,3 @@ export default function NumberPicker({ value, onChange, title }: { value: Select
     </div>
   );
 }
-

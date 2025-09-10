@@ -1,33 +1,14 @@
 "use client";
 
+export const runtime = 'edge';
+
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import type { Pool } from "../../../../lib/pool";
 import { getPool, getContributionTotal, computeShares } from "../../../../lib/pool";
 import { buildSmartLink, digestPoolForAgreement } from "../../../../lib/share";
 
-function useDigest(input: unknown) {
-  const [hex, setHex] = useState<string>("");
-  useEffect(() => {
-    let cancelled = false;
-    async function run() {
-      try {
-        const text = JSON.stringify(input);
-        const enc = new TextEncoder();
-        const buf = enc.encode(text);
-        const hash = await crypto.subtle.digest("SHA-256", buf);
-        const arr = Array.from(new Uint8Array(hash));
-        const h = arr.map((b) => b.toString(16).padStart(2, "0")).join("");
-        if (!cancelled) setHex(h);
-      } catch {
-        if (!cancelled) setHex("");
-      }
-    }
-    run();
-    return () => { cancelled = true; };
-  }, [input]);
-  return hex;
-}
+// Используем общий helper для дайджеста, чтобы не дублировать алгоритм
 
 export default function AgreementPage() {
   const params = useParams();
@@ -61,7 +42,20 @@ export default function AgreementPage() {
     };
   }, [pool, participants]);
 
-  const digest = useDigest(digestInput);
+  const [digest, setDigest] = useState<string>("");
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        // строим digest по тем же правилам, что и при ссылке/экспорте
+        if (pool) {
+          const d = await digestPoolForAgreement(pool);
+          if (!cancelled) setDigest(d);
+        } else if (!cancelled) setDigest("");
+      } catch { if (!cancelled) setDigest(""); }
+    })();
+    return () => { cancelled = true; };
+  }, [pool]);
 
   const [qrDataUrl, setQrDataUrl] = useState<string>("");
   const [qrLink, setQrLink] = useState<string>("");
@@ -91,10 +85,7 @@ export default function AgreementPage() {
     return () => { cancelled = true; };
   }, [pool, digest]);
 
-  useEffect(() => {
-    const t = setTimeout(() => { try { window.print(); } catch {} }, 600);
-    return () => clearTimeout(t);
-  }, []);
+  // Авто‑печать отключена: печать запускается только по кнопке
 
   if (!pool) {
     return (
