@@ -146,7 +146,7 @@ export function savePool(pool: Pool) {
 export function createPool(input: { name: string; drawDate: Date; pricePer?: number; initialTickets?: number }): Pool {
   const id = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(36).slice(2, 8);
   const now = new Date().toISOString();
-  const pricePer = input.pricePer ?? 5;
+  const pricePer = input.pricePer ?? 2;
   const initialTickets = Math.max(1, Math.min(10, input.initialTickets ?? 1));
   const tickets = Array.from({ length: initialTickets }, () => makeEmptySelection());
   const pool: Pool = {
@@ -198,7 +198,7 @@ export async function importPoolFromFile(file: File): Promise<Pool | null> {
       id: assignedId,
       name: raw.name ?? "Без названия",
       drawDateISO: raw.drawDateISO ?? new Date().toISOString(),
-      pricePer: raw.pricePer ?? 5,
+      pricePer: raw.pricePer ?? 2,
       tickets: raw.tickets ?? [makeEmptySelection()],
       participants: raw.participants ?? [],
       contributions: raw.contributions ?? [],

@@ -3,7 +3,7 @@
 export const runtime = 'edge';
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import NumberPicker from "../../../components/NumberPicker";
 import type { Pool, Selection, Participant, ShareMode } from "../../../lib/pool";
 import { getPool, savePool, updatePoolTickets, makeEmptySelection, makeRandomSelection, exportPool, addParticipant, removeParticipant, setContributionTotal, getContributionTotal, setShareMode, setManualPercent, computeShares } from "../../../lib/pool";
@@ -40,10 +40,9 @@ function Countdown({ target }: { target: Date }) {
   );
 }
 
-// Next 15 may type `params` as an async value; keep it flexible to satisfy TS across versions
-export default function PoolPage({ params }: any) {
+export default function PoolPage() {
   const router = useRouter();
-  const poolId = (params as any)?.id as string;
+  const { id: poolId } = useParams<{ id: string }>();
   const [pool, setPool] = useState<Pool | null>(null);
   const [tickets, setTickets] = useState<Selection[]>([]);
   const [participants, setParticipants] = useState<Participant[]>([]);

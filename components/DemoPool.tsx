@@ -42,7 +42,7 @@ function NextDrawDate() {
 
 export default function DemoPool() {
   const target = NextDrawDate();
-  const pricePer = 5;
+  const pricePer = 2;
   const [tickets, setTickets] = useState<Selection[]>([{ numbers: [], power: null }]);
   const [participants, setParticipants] = useState<Participant[]>([
     { id: "p1", name: "", role: "holder", email: "" },
@@ -75,16 +75,21 @@ export default function DemoPool() {
   }, [showAgreement]);
 
   const demoFill = () => {
-    setTickets([{ numbers: [7, 14, 21, 28, 35], power: 7 }]);
+    setTickets([
+      { numbers: [7, 14, 21, 28, 35], power: 7 },
+      { numbers: [5, 10, 15, 20, 25], power: 5 },
+      { numbers: [8, 16, 24, 32, 40], power: 8 },
+    ]);
     setParticipants([
       { id: "p1", name: "Алексей Смирнов", role: "holder", email: "alexey.smirnov@example.com" },
       { id: "p2", name: "Пётр Иванов", role: "member", email: "petr.ivanov@example.com" },
       { id: "p3", name: "Сергей Кузнецов", role: "member", email: "sergey.kuznetsov@example.com" },
     ]);
     setContributions([
-      { id: "c1", participantId: "p1", amount: 1, createdAt: new Date().toISOString() },
-      { id: "c2", participantId: "p2", amount: 2, createdAt: new Date().toISOString() },
-      { id: "c3", participantId: "p3", amount: 2, createdAt: new Date().toISOString() },
+      // Банк: 3 билета × $2 = $6; вклады: держатель $1, участники по $2.5 → всего $6
+      { id: "c1", participantId: "p1", amount: 1.0, createdAt: new Date().toISOString() },
+      { id: "c2", participantId: "p2", amount: 2.5, createdAt: new Date().toISOString() },
+      { id: "c3", participantId: "p3", amount: 2.5, createdAt: new Date().toISOString() },
     ]);
   };
   const reset = () => {
@@ -129,14 +134,16 @@ export default function DemoPool() {
       {/* Tickets block like real pool, but read-only */}
       <div className="card" style={{ padding: 20, display: "grid", gap: 12 }}>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", minWidth: 0 }}>
-          <div className="small">Количество билетов: 1</div>
+          <div className="small">Количество билетов: {tickets.length}</div>
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
             <button className="btn btn--ghost" onClick={demoFill}>Заполнить демо</button>
             <button className="btn btn--ghost" onClick={reset}>Сбросить</button>
           </div>
         </div>
-        <div style={{ pointerEvents: 'none', opacity: 0.9 }}>
-          <NumberPicker value={tickets[0]} onChange={() => { /* read-only demo */ }} title="Билет #1" />
+        <div style={{ pointerEvents: 'none', opacity: 0.9, display: 'grid', gap: 12 }}>
+          {tickets.map((t, i) => (
+            <NumberPicker key={i} value={t} onChange={() => { /* read-only demo */ }} title={`Билет #${i + 1}`}/>
+          ))}
         </div>
       </div>
 
@@ -269,7 +276,11 @@ export default function DemoPool() {
             <div className="card" style={{ padding: 16, display: 'grid', gap: 6 }}>
               <h4 style={{ margin: 0 }}>Приложение A. Билеты</h4>
               <div className="small">Цена за билет: ${pricePer.toFixed(2)} • Итого билетов: {tickets.length} • Банк: ${bank.toFixed(2)}</div>
-              <div className="small">Билет #1: {tickets[0].numbers.join(' ')} • PB {tickets[0].power ?? '-'}</div>
+              <div className="small" style={{ display: 'grid', gap: 4 }}>
+                {tickets.map((t, i) => (
+                  <div key={i}>Билет #{i + 1}: {t.numbers.join(' ')} • PB {t.power ?? '-'}</div>
+                ))}
+              </div>
             </div>
 
             {/* Приложение B */}

@@ -53,7 +53,7 @@ export default function NewPoolPage() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [initialTickets, setInitialTickets] = useState(1);
-  const [pricePer, setPricePer] = useState(5);
+  const [pricePer, setPricePer] = useState(2);
   const [date, setDate] = useState<string>(() => {
     const t = nextDrawDefault();
     // to local datetime-local value
@@ -71,7 +71,7 @@ export default function NewPoolPage() {
 
   const onCreate = () => {
     const draw = date ? new Date(date) : nextDrawDefault();
-    const pool = createPool({ name, drawDate: draw, pricePer: Number(pricePer) || 5, initialTickets: validTickets });
+    const pool = createPool({ name, drawDate: draw, pricePer: Number(pricePer) || 2, initialTickets: validTickets });
     router.replace(`/pool/${pool.id}`);
   };
 
